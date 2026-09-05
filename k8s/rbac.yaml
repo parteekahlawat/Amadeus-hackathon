@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubeqa-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubeqa-operator
+  namespace: kubeqa-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubeqa-operator
+rules:
+  # Watch deployments for changes
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "patch"]
+  # Read pods, services, networkpolicies for security scanning
+  - apiGroups: [""]
+    resources: ["pods", "services", "serviceaccounts", "secrets", "namespaces", "events"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies", "ingresses"]
+    verbs: ["get", "list", "watch"]
+  # Read RBAC for K02 checks
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+    verbs: ["get", "list", "watch"]
+  # Create events for quality gate results
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  # Create test runner jobs
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+  # Pause/resume rollouts
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubeqa-operator
+subjects:
+  - kind: ServiceAccount
+    name: kubeqa-operator
+    namespace: kubeqa-system
+roleRef:
+  kind: ClusterRole
+  name: kubeqa-operator
+  apiGroup: rbac.authorization.k8s.io

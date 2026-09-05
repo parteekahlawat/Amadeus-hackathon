@@ -1,0 +1,177 @@
+
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║     KubeQA Shield — Autonomous Quality Engineering           ║
+║                                                              ║
+║     Observe → Understand → Predict → Generate →             ║
+║     Execute → Heal → Learn → Explain                        ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+─── PHASE 1: OBSERVE ─────────────────────────────────────────
+
+  ⚡ Deployment change detected
+     travel-booking-svc:v1.4.2 → v1.4.3
+
+  📂 3 files changed:
+     app.py                  → SAST Scanner
+     templates/checkout.html → Business Intent + A11y
+     k8s/deployment.yaml     → K8s Scanner
+
+─── PHASE 2: UNDERSTAND ─────────────────────────────────────
+
+  Running 4 AI scans...
+
+  [1/4] SAST (OWASP Web + LLM Top 10) .......... done
+
+  🔴 CRITICAL  A03  SQL Injection             app.py:17
+  🔴 CRITICAL  A10  SSRF                      app.py:46
+  🔴 CRITICAL  A08  Pickle Deserialization     app.py:52
+  🔴 CRITICAL  LLM02 XSS via LLM Output       app.py:30
+  🔴 CRITICAL  A02  Hardcoded Secrets          app.py:8
+  🟠 HIGH      LLM01 Prompt Injection          app.py:24
+  🟠 HIGH      A01  Missing Auth               app.py:35
+  🟠 HIGH      A05  Debug Mode On              app.py:57
+  🟡 MEDIUM    A05  No CSRF Protection         app.py:35
+  🟡 MEDIUM    LLM06 API Key in Source         app.py:9
+  🟡 MEDIUM    A09  No Audit Logging           app.py
+
+  Found: 11 vulnerabilities (5 critical, 3 high, 3 medium)
+
+  [2/4] K8s Security (OWASP K8s Top 10) ....... done
+
+  🔴 CRITICAL  K01  Running as root + privileged
+  🔴 CRITICAL  K03  Secrets in plaintext env vars
+  🔴 CRITICAL  K02  Default SA → cluster-admin
+  🟠 HIGH      K09  SA token auto-mounted
+  🟠 HIGH      K05  No NetworkPolicy
+  🟡 MEDIUM    K01  No resource limits
+  🟡 MEDIUM    K10  No audit logging
+
+  Cluster posture: CRITICAL (7 findings)
+
+  [3/4] Business Intent Discovery ............. done
+
+  Discovered 3 user workflows:
+
+  🔵 complete_booking (HIGH value)
+     User enters destination → provides email → selects passengers →
+     chooses payment → submits booking → receives confirmation
+
+  🔵 review_total_price (MEDIUM value)
+     User views price → verifies it matches selection
+
+  🔵 handle_booking_error (MEDIUM value)
+     User sees error → corrects input → resubmits → booking succeeds
+
+  [4/4] Accessibility (WCAG 2.1 AA) .......... done
+
+  Compliance: 45/100
+
+  🔴 CRITICAL  1.1.1  Image missing alt text
+  🟠 HIGH      1.4.3  Button contrast 2.1:1 (need 4.5:1)
+  🟠 HIGH      3.3.2  Radio group missing fieldset
+  🟡 MEDIUM    3.3.1  Error not linked to field
+  🟡 MEDIUM    1.3.5  No autocomplete on email
+  🟡 MEDIUM    2.4.1  No skip-to-content link
+  🟡 MEDIUM    1.3.1  No landmark roles
+  🟡 MEDIUM    2.4.7  No focus indicators
+  🟢 LOW       4.1.2  Email type="text" not "email"
+
+  ✓ lang="en" present
+  ✓ Labels correctly associated
+
+─── PHASE 3: PREDICT ─────────────────────────────────────────
+
+  Risk-ranked test priority:
+
+  1. 🔴 Security     — 18 findings across Web + K8s
+  2. 🟠 Workflows    — 3 user journeys to validate
+  3. 🟡 Accessibility — 9 WCAG violations
+  4. 🟢 Performance  — 2 changed endpoints
+
+─── PHASE 4: GENERATE ────────────────────────────────────────
+
+  Learning context: First run — no prior heal history.
+
+  Generating business-intent tests...
+
+  ✓ 7 tests generated (4 positive, 3 negative)
+
+     test_user_can_complete_booking
+     test_user_can_review_price_before_booking
+     test_user_cannot_book_without_destination
+     test_user_cannot_book_without_email
+     test_user_sees_error_on_invalid_submission
+     test_user_can_retry_after_error
+     test_user_can_select_payment_method
+
+  Using resilient selectors: data-testid → aria-label → role → CSS
+
+─── PHASE 5: EXECUTE + HEAL ──────────────────────────────────
+
+  Running tests...
+
+  ✓ test_user_can_review_price           PASS
+  ✓ test_user_can_select_payment         PASS
+  ✗ test_user_can_complete_booking       FAIL
+    → selector '.btn-book' not found
+
+  Self-healing...
+
+  Old:  page.click('.btn-book')
+  DOM:  <button class="btn-confirm">Book Now</button>
+
+  🔧 Accessibility tree confirms: Button "Book Now" still exists.
+     Class renamed .btn-book → .btn-confirm
+     This is a CSS rename, not a bug.
+
+  ✓ HEALED  '.btn-book' → '.btn-confirm'  (HIGH confidence)
+  ✓ Re-run: PASS
+
+─── PHASE 6: LEARN ───────────────────────────────────────────
+
+  Heal saved to knowledge base.
+
+  Pattern recorded: css_class_rename
+  Selector:         .btn-book → .btn-confirm
+
+  ↻ Next cycle will avoid CSS-class selectors for this element
+    and prefer aria-label or data-testid instead.
+
+─── PHASE 7: EXPLAIN ─────────────────────────────────────────
+
+  ┌──────────────────────────────────────────────┐
+  │                                              │
+  │   Quality Score:     32 / 100                │
+  │   Verdict:           ✗ NOT READY             │
+  │   Recommendation:    BLOCK RELEASE           │
+  │                                              │
+  └──────────────────────────────────────────────┘
+
+  Why:
+   • 5 critical security vulnerabilities (SQL injection, SSRF, RCE)
+   • K8s cluster posture CRITICAL (root + cluster-admin)
+   • Accessibility 45/100 (WCAG AA not met)
+   • Perf regression 2.8x on /api/v2/pricing
+   • Checkout workflow functional (after self-heal)
+
+  Fix these before releasing:
+   1. SQL Injection  → use parameterized queries
+   2. SSRF           → validate URL against allowlist
+   3. Pickle RCE     → replace with json.loads
+   4. K8s root       → runAsNonRoot: true, drop capabilities
+   5. Hardcoded keys → move to K8s Secrets or Vault
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  PIPELINE COMPLETE
+
+  ⏱️  18.4s      🤖 6 LLM calls     🔬 30 OWASP rules
+  🎭 3 workflows  🧪 7 tests         🔧 1 self-healed
+  ♿ 9 a11y       📊 Score: 32/100
+
+  Observe → Understand → Predict → Generate →
+  Execute → Heal → Learn → Explain  ✓
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

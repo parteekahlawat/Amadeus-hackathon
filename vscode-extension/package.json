@@ -1,0 +1,103 @@
+{
+  "name": "kubeqa-test-gen",
+  "displayName": "KubeQA — Autonomous Test Generator",
+  "description": "Real-time AI-powered unit test generation as you code. Uses Groq LLM to analyze your code changes and generate comprehensive test suites.",
+  "version": "0.1.0",
+  "publisher": "kubeqa",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Testing",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:python",
+    "onLanguage:javascript",
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact",
+    "onLanguage:javascriptreact",
+    "onLanguage:go",
+    "onLanguage:java"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "kubeqa.generateTests",
+        "title": "KubeQA: Generate Tests for Current File"
+      },
+      {
+        "command": "kubeqa.generateTestsForFunction",
+        "title": "KubeQA: Generate Tests for Selected Function"
+      },
+      {
+        "command": "kubeqa.generateTestsForDiff",
+        "title": "KubeQA: Generate Tests for Uncommitted Changes"
+      },
+      {
+        "command": "kubeqa.runSecurityScan",
+        "title": "KubeQA: Run OWASP Security Scan on File"
+      },
+      {
+        "command": "kubeqa.toggleAutoGen",
+        "title": "KubeQA: Toggle Auto-Generate on Save"
+      }
+    ],
+    "configuration": {
+      "title": "KubeQA",
+      "properties": {
+        "kubeqa.groqApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Groq API key for LLM-powered test generation"
+        },
+        "kubeqa.groqModel": {
+          "type": "string",
+          "default": "llama-3.1-70b-versatile",
+          "description": "Groq model to use"
+        },
+        "kubeqa.autoGenerateOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically generate tests when a file is saved"
+        },
+        "kubeqa.testFramework": {
+          "type": "string",
+          "enum": ["pytest", "jest", "mocha", "go-test", "junit"],
+          "default": "pytest",
+          "description": "Test framework to generate tests for"
+        },
+        "kubeqa.outputDirectory": {
+          "type": "string",
+          "default": "tests",
+          "description": "Directory to save generated tests"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "kubeqa.generateTests",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kubeqa.generateTestsForFunction",
+        "key": "ctrl+shift+f",
+        "mac": "cmd+shift+f",
+        "when": "editorTextFocus && editorHasSelection"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}

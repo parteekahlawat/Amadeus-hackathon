@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubeqa-operator
+  namespace: kubeqa-system
+  labels:
+    app: kubeqa-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubeqa-operator
+  template:
+    metadata:
+      labels:
+        app: kubeqa-operator
+    spec:
+      serviceAccountName: kubeqa-operator
+      containers:
+        - name: operator
+          image: kubeqa/operator:latest
+          env:
+            - name: GROQ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: kubeqa-secrets
+                  key: groq-api-key
+            - name: KUBEQA_DB
+              value: /data/kubeqa.db
+            - name: PROMETHEUS_URL
+              value: http://prometheus-server.monitoring.svc.cluster.local:9090
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: kubeqa-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kubeqa-data
+  namespace: kubeqa-system
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi

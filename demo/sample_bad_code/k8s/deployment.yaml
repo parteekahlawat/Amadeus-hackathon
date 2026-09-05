@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: travel-booking-svc
+  namespace: default
+  annotations:
+    kubeqa/repo-path: /app
+    kubeqa/base-url: http://travel-booking-svc.default.svc.cluster.local
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: travel-booking
+  template:
+    metadata:
+      labels:
+        app: travel-booking
+    spec:
+      # K01: Running as root, privileged
+      containers:
+        - name: app
+          image: travel-booking:v1.4.3
+          securityContext:
+            runAsUser: 0            # K01: Running as root
+            privileged: true        # K01: Privileged container
+            allowPrivilegeEscalation: true  # K01: Escalation allowed
+          ports:
+            - containerPort: 8080
+          env:
+            # K03: Secrets in plain env vars
+            - name: DB_PASSWORD
+              value: "supersecret123"
+            - name: GROQ_API_KEY
+              value: "gsk_abc123def456"
+            - name: AWS_SECRET_ACCESS_KEY
+              value: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+          # K01: No resource limits
+      # K09: Default SA with auto-mounted token
+      automountServiceAccountToken: true
+---
+# K02: Overly permissive RBAC
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: travel-booking-admin
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+# K05: No NetworkPolicy defined — flat network
